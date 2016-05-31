@@ -13,3 +13,4 @@ rel/dist_lock_server
 rebar*
 log
 .idea
+out
