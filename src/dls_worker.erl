@@ -62,7 +62,7 @@ lock(Key) ->
       ok;
     wait ->
       receive
-        get_lock ->
+        {get_lock, Key} ->
           ok
       end
   end.
