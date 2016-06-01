@@ -52,7 +52,7 @@ get_pid(Key) ->
   end.
 
 try_lock(Key) ->
-  io:format("try get lock of~p~n", [Key]),
+  io:format("try get lock of~p, Pid ~p ~n", [Key, self()]),
   Pid = get_pid(Key),
   gen_server:call(Pid, {lock, self()}).
 
@@ -68,7 +68,7 @@ lock(Key) ->
   end.
 
 unlock(Key) ->
-  io:format("unlock ~p~n", [Key]),
+  io:format("unlock ~p, Pid ~p ~n", [Key, self()]),
   Pid = get_pid(Key),
   gen_server:call(Pid, {unlock, self()}).
 %%%===================================================================

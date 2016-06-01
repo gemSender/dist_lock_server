@@ -15,6 +15,13 @@ start(_StartType, _StartArgs) ->
         ranch_tcp, [{port, 5555}],
         conn_handler, []
     ),
+    Dispatch = cowboy_router:compile([
+        {'_', [
+            {"/websocket", dls_ws_handler, []}
+        ]}
+    ]),
+    {ok, _} = cowboy:start_http(http, 100, [{port, 5556}],
+        [{env, [{dispatch, Dispatch}]}]),
     dist_lock_server_sup:start_link().
 
 stop(_State) ->

@@ -12,12 +12,7 @@
 -define(reading_command, 0).
 -define(reading_length, 1).
 -define(reading_key, 2).
-
--define(cmd_lock, 0).
--define(cmd_unlock, 1).
-
--define(msg_get_lock, 2).
--define(msg_unlock, 3).
+-include_lib("constants.hrl").
 
 -record(state,{map :: undefined | map(), data_state :: integer(), data_pre :: {binary()|integer(), binary()|integer(), binary()}}).
 %% callbacks
@@ -75,7 +70,7 @@ on_message(?reading_length, <<H, Rest/binary>>, State) ->
     4 ->
       case bin_to_int(NewLenBin) of
         0 ->
-          State1 = deal_cmd(CmdInt, <<>>, State),
+          State1 = State#state{map = common:deal_cmd(CmdInt, <<>>, State)},
           on_message(?reading_command, Rest, State1#state{data_pre = {<<>>, <<>>, <<>>}});
         LenInt ->
           io:format("Key Length ~p~n", [LenInt]),
@@ -89,7 +84,7 @@ on_message(?reading_key, <<H, Rest/binary>>, State) ->
   NewKeyBin = <<KeyBin/binary, H>>,
   case byte_size(NewKeyBin) of
     LenInt ->
-      State1 = deal_cmd(CmdInt, NewKeyBin, State),
+      State1 = State#state{map = common:deal_cmd(CmdInt, NewKeyBin, State)},
       on_message(?reading_command, Rest, State1#state{data_pre = {<<>>, <<>>, <<>>}});
     N when N < LenInt ->
       on_message(?reading_key, Rest, State#state{data_pre = {CmdInt, LenInt, NewKeyBin}})
@@ -100,31 +95,3 @@ bin_to_int(<<B1, B2, B3, B4>>) ->
 
 int_to_bin(N) ->
   <<(N band 16#FF)/integer, ((N bsr 8) band 16#FF)/integer, ((N bsr 16) band 16#FF)/integer, ((N bsr 24) band 16#FF)/integer>>.
-
-deal_cmd(?cmd_lock, Key, State) ->
-  Map = State#state.map,
-  CountPre = maps:get(Key, Map, 0),
-  case dls_worker:try_lock(Key) of
-    get_lock ->
-      self() ! {get_lock, Key};
-    wait ->
-      ok
-  end,
-  NewMap = Map#{Key => CountPre + 1},
-  State#state{map = NewMap};
-deal_cmd(?cmd_unlock, Key, State) ->
-  Map = State#state.map,
-  case maps:get(Key, Map, 0) of
-    0 ->
-      State;
-    CountPre ->
-      case dls_worker:unlock(Key) of
-        ok ->
-          NewMap = Map#{Key := CountPre + 1},
-          self() !{unlock, Key},
-          State#state{map = NewMap};
-        error ->
-          State
-      end
-  end.
-
