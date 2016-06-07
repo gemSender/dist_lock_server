@@ -10,8 +10,7 @@ ebin
 rel/dist_lock_server
 .concrete/DEV_MODE
 .rebar
-rebar
-rebar.cmd
+/rebar/
 log
 .idea
 out
